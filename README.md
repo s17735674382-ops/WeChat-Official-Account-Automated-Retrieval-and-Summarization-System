@@ -1,10 +1,10 @@
-# 人大信息雷达 · RUC Information Radar
+# 大学信息雷达 · University Information Radar
 
-面向校园信息整理的 Windows Python 项目：读取 RSS 和 Wechat2RSS 订阅，将文章去重保存到 SQLite，可选调用 DeepSeek 分析正文与海报，生成每天一份 Markdown / HTML 校园日报。
+我开发这个项目，是为了把分散在多个公众号中的校园资讯整理成便于浏览的日报。我用 Wechat2RSS 提供订阅来源，用 Python 完成采集与去重，用 DeepSeek 提取正文和海报信息，再由独立的 Harness 读取日报并通过其已授权的 IM 功能发送微信消息。
 
-[下载 v0.6 脱敏代码包](https://github.com/s17735674382-ops/WeChat-Official-Account-Automated-Retrieval-and-Summarization-System/blob/main/downloads/ruc-information-radar-v0.6-public.zip) · [核对压缩包 SHA256](https://github.com/s17735674382-ops/WeChat-Official-Account-Automated-Retrieval-and-Summarization-System/blob/main/downloads/ruc-information-radar-v0.6-public.zip.sha256)
+[下载 v0.6 脱敏代码包](https://github.com/s17735674382-ops/WeChat-Official-Account-Automated-Retrieval-and-Summarization-System/blob/main/downloads/university-information-radar-v0.6-public.zip) · [核对压缩包 SHA256](https://github.com/s17735674382-ops/WeChat-Official-Account-Automated-Retrieval-and-Summarization-System/blob/main/downloads/university-information-radar-v0.6-public.zip.sha256)
 
-这是 v0.6 的脱敏代码发布副本。仓库不包含真实订阅、个人数据库、文章、图片、报告、云服务凭据或 API Key。代码由项目使用者通过 Codex 协作开发；Wechat2RSS 与模型服务属于外部依赖，不在本仓库重新分发。
+这是 v0.6 的脱敏代码发布副本。仓库不包含真实订阅、个人数据库、文章、图片、报告、云服务凭据或 API Key。我通过 Codex 协作开发本地程序；Wechat2RSS 与模型服务属于外部依赖，不在本仓库重新分发。
 
 ## 项目组成
 
@@ -19,6 +19,17 @@ flowchart LR
 ```
 
 本项目负责本地采集、分析与报告文件。微信公众号转 RSS 的云端方法见 [云端技术说明](docs/cloud-method.md)，模型接入与证据校验见 [DeepSeek 技术说明](docs/deepseek-method.md)，环境及成本见 [环境与服务清单](docs/environment-and-services.md)。本项目不实现微信发送。
+
+## 我的使用路径
+
+1. 我购买 Wechat2RSS 私有部署授权，在 Sealos Cloud 部署其容器服务，并配置持久化与 HTTPS。
+2. 我依据 [Wechat2RSS 官方使用文档](https://wechat2rss.xlab.app/deploy/guide) 完成正常授权、添加需要关注的公众号，再把订阅通过 OPML 导入本地程序。
+3. 我让 Windows 计划任务每天10:00启动采集与可选的 API 分析，报告完成后写入 reports。
+4. 我的微信推送方案是在 DeepSeek Harness 中单独配置10:10任务，只读取当天报告并发送到已确认的微信会话。仓库提供配置提示词，实际任务是否生效仍需在自己的 Harness 中验证。
+
+我没有在本仓库重新实现 Wechat2RSS，也没有公开自己的公众号列表。部署、账号授权、订阅和故障处理请以 [Wechat2RSS 官方文档](https://wechat2rss.xlab.app/deploy/) 为准，本仓库只说明接入路径。读者可按照 [订阅设置指南](docs/subscriptions.md) 配置自己的来源。
+
+Harness 的具体操作与可复制提示词见 [每日微信推送配置](docs/harness-push.md)。该文档是我给外部软件的任务要求，不表示本仓库已实现微信发送，也不表示任何 Harness 安装都具备相同接口。
 
 ## 已有功能
 
@@ -41,7 +52,7 @@ python -B -X utf8 .\main.py
 
 若 `python` 命令不可用，请用你自己的 Python 可执行文件完整路径，不需要为此重新安装 Python。`config.json` 是本地配置，已被 Git 忽略；示例配置只有公开测试 RSS，付费开关和每日自动分析默认关闭。
 
-先用菜单1测试公开 RSS。公众号订阅需自行部署服务，再从菜单8导入自己的 OPML；OPML 可能含访问凭据，应保留在本地，不上传仓库。完整步骤见 [如何设置自己的公众号订阅](docs/subscriptions.md)。本仓库不提供原项目使用者的公众号订阅清单。
+先用菜单1测试公开 RSS。公众号订阅需自行部署服务，再从菜单8导入自己的 OPML；OPML 可能含访问凭据，应保留在本地，不上传仓库。完整步骤见 [如何设置自己的公众号订阅](docs/subscriptions.md)。本仓库不提供我的公众号订阅清单。
 
 ## 每日日报
 

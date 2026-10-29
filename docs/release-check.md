@@ -14,4 +14,4 @@
 
 尚未验证：其他Python版本、其他操作系统、公开副本的真实云端采集/付费调用和实际计划任务触发。没有将免费测试写成真实云端或模型分析成功。
 
-发布目标为使用者指定的 GitHub 仓库 `s17735674382-ops/WeChat-Official-Account-Automated-Retrieval-and-Summarization-System`。软件授权选择及实际服务购买金额不由打包流程推测。
+发布目标为我的 GitHub 仓库 `s17735674382-ops/WeChat-Official-Account-Automated-Retrieval-and-Summarization-System`。我不在仓库中公开真实账单或付款信息。

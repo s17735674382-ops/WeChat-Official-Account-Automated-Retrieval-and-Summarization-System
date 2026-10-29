@@ -87,7 +87,7 @@ def fetch_public(url, timeout=20, max_bytes=5 * 1024 * 1024, allowed_host=None):
         target = urlunsplit(("", "", parts.path or "/", parts.query, ""))
         try:
             connection.request("GET", target, headers={
-                "User-Agent": "RUC-Information-Radar/0.3 (public reader)",
+                "User-Agent": "University-Information-Radar/0.3 (public reader)",
                 "Accept": "application/rss+xml, application/atom+xml, application/xml, text/html, */*",
                 "Accept-Encoding": "identity",
             })

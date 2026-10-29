@@ -1,4 +1,4 @@
-"""人大信息雷达 v0.4.1：RSS、公众号导入、AI 分析与数据管理。"""
+"""大学信息雷达 v0.4.1：RSS、公众号导入、AI 分析与数据管理。"""
 
 import json
 import sqlite3
@@ -225,7 +225,7 @@ def main(db_path=DB_PATH):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
 
-    print("人大信息雷达（DeepSeek 每次调用前确认；支持 Wechat2RSS 增量采集）")
+    print("大学信息雷达（DeepSeek 每次调用前确认；支持 Wechat2RSS 增量采集）")
     if sys.argv[1:] == ["--rss"]:
         return run_rss()
     if sys.argv[1:] in (["--daily-run"], ["--generate-report"]):

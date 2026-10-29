@@ -73,7 +73,7 @@ def system_prompt():
         "并必须包含在 ocr_text 中。时间和网址逐字抄录，不补年份、不换算相对日期、不推测二维码网址。"
         "日期缺少年份、使用相对日期、存在冲突或模糊时，对应字段设null，并在 review_needed 中说明，保留证据。"
         "报名链接只有清楚可见的完整 http/https 原文才可填写。"
-        "importance_score是0到100的整数或null，是面向普通人大在校生的主观参考，理由写 importance_reason。"
+        "importance_score是0到100的整数或null，是面向普通大学在校生的主观参考，理由写 importance_reason。"
         "信息不足以评分时两者都设null。summary是简短中文摘要，不加入图片中没有的事实。"
         "review_needed为需人工核对的字段和原因数组，没有额外问题用空数组。示例结构（不是文章数据）：\n"
         + json.dumps(template, ensure_ascii=False)
