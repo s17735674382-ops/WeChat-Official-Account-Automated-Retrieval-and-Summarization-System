@@ -1,0 +1,195 @@
+"""v0.6 免费模拟测试：临时数据库、人工 RSS/模型结果，禁止真实连接。"""
+import contextlib
+import hashlib
+import json
+import sqlite3
+import tempfile
+import unittest
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from unittest.mock import patch
+import daily_pipeline as daily
+import daily_reports as reports
+from daily_analysis import FIELDS, CATEGORIES, validate
+from image_import import image_store_lock
+from test_v04 import png
+
+T = datetime(2026,10,29,9,50,tzinfo=daily.BJ)
+FEED = '''<rss><channel><title>【测试】校园</title><item><title>【测试】讲座</title><guid>fixed-id</guid>
+<link>https://mp.weixin.qq.com/s/test</link><description>【测试】讲座，2026年10月30日，教室A。</description></item></channel></rss>'''.encode()
+
+def envelope():
+    event = {k:None for k in FIELDS}
+    event.update(name='【测试】讲座',category=CATEGORIES[0],time='2026年10月30日',location='教室A',
+                 evidence={k:None for k in FIELDS})
+    event['evidence'].update(name='【测试】讲座',time='2026年10月30日',location='教室A')
+    return {'choices':[{'finish_reason':'stop','message':{'content':json.dumps({'ocr_text':None,'events':[event]},ensure_ascii=False)}}]}
+
+class DailyTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='ruc-test-only-daily-',dir=Path(__file__).parent)
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.db = self.root/'articles.db'
+        self.cfg = self.root/'config.json'
+        self.value = {'sources':[{'name':'【测试】源','url':'https://example.com/rss?token=PRIVATE_TEST_SECRET'}],
+                      'deepseek':{'paid_api_enabled':True},'daily':{'rss_retries':0}}
+        self.write_config()
+        self.block = patch('socket.create_connection',side_effect=AssertionError('禁止真实网络'))
+        self.block.start(); self.addCleanup(self.block.stop)
+        self.calls = []
+
+    def write_config(self):
+        self.cfg.write_text(json.dumps(self.value,ensure_ascii=False),encoding='utf-8')
+
+    def transport(self,kind,value,timeout):
+        self.calls.append(kind)
+        return FEED if kind=='fetch' else envelope()
+
+    def run_daily(self,**kwargs):
+        now = kwargs.pop('now',T)
+        with patch.object(daily,'clock',return_value=now), contextlib.redirect_stdout(__import__('io').StringIO()):
+            return daily.run(self.db,self.cfg,now=now,transport=kwargs.pop('transport',self.transport),**kwargs)
+
+    def status(self):
+        return json.loads((self.root/'reports/status.json').read_text(encoding='utf-8'))
+
+    def test_complete_and_repeat_skips_all_paid_and_source_requests(self):
+        self.assertEqual(self.run_daily(),0)
+        first = list(self.calls)
+        self.assertEqual(self.run_daily(),0)
+        self.assertEqual(self.calls,first)
+        self.assertEqual(self.status()['articles_new'],1)
+        self.assertEqual(self.status()['articles_analyzed'],1)
+        self.assertEqual(self.calls.count('api'),1)
+
+    def test_all_sources_failed_still_publishes_fault_brief(self):
+        def fail(*args): raise TimeoutError()
+        self.assertEqual(self.run_daily(transport=fail),2)
+        s=self.status(); self.assertEqual(s['status'],'partial'); self.assertEqual(s['sources_failed'],1)
+        content=Path(s['markdown_path']).read_text(encoding='utf-8')
+        self.assertIn('无法确认是否有新增信息',content)
+        self.assertNotIn('本轮暂无新增文章',content)
+
+    def test_multiple_sources_partial_and_global_url_dedup(self):
+        self.value['sources'] += [{'name':'另一个','url':'https://example.org/rss'}]
+        self.write_config()
+        self.assertEqual(self.run_daily(),0)
+        self.assertEqual(self.status()['sources_success'],2)
+        self.assertEqual(self.status()['articles_new'],1)
+
+    def test_one_source_fails_others_continue(self):
+        self.value['sources'] += [{'name':'失败源','url':'https://bad.example/rss'}]; self.write_config()
+        def transport(kind,value,timeout):
+            if kind=='fetch' and 'bad.example' in value: raise TimeoutError()
+            return self.transport(kind,value,timeout)
+        self.assertEqual(self.run_daily(transport=transport),2)
+        self.assertEqual(self.status()['sources_success'],1)
+        self.assertEqual(self.status()['articles_analyzed'],1)
+
+    def test_api_failure_preserves_pending_and_does_not_auto_retry(self):
+        def transport(kind,value,timeout):
+            self.calls.append(kind)
+            if kind=='api': raise TimeoutError()
+            return FEED
+        self.assertEqual(self.run_daily(transport=transport),2)
+        self.assertEqual(self.status()['articles_pending'],1)
+        self.run_daily(transport=transport)
+        self.assertEqual(self.calls.count('api'),1)
+        self.assertIn('待分析',Path(self.status()['markdown_path']).read_text(encoding='utf-8'))
+
+    def test_next_day_no_new_articles_is_complete_and_preserves_prior_report(self):
+        self.run_daily()
+        before=(self.root/'reports/2026-10-29.md').read_bytes()
+        self.assertEqual(self.run_daily(now=T+timedelta(days=1)),0)
+        self.assertEqual(self.status()['articles_new'],0)
+        self.assertIn('本轮暂无新增文章',Path(self.status()['markdown_path']).read_text(encoding='utf-8'))
+        self.assertEqual((self.root/'reports/2026-10-29.md').read_bytes(),before)
+
+    def test_report_only_makes_partial_without_network(self):
+        self.assertEqual(self.run_daily(report_only=True),2)
+        self.assertEqual(self.calls,[])
+        self.assertEqual(self.status()['sources_failed'],1)
+
+    def test_daily_call_limit_keeps_title_link_in_report(self):
+        self.value['daily']['max_api_calls']=0; self.write_config()
+        self.assertEqual(self.run_daily(),2)
+        self.assertEqual(self.calls,['fetch'])
+        body=Path(self.status()['markdown_path']).read_text(encoding='utf-8')
+        self.assertIn('讲座',body); self.assertIn('https://mp.weixin.qq.com/s/test',body)
+
+    def test_status_hashes_report_identifiers_utf8_and_no_secret(self):
+        self.run_daily(); s=self.status()
+        for field,hash_field in [('markdown_path','markdown_sha256'),('html_path','html_sha256')]:
+            data=Path(s[field]).read_bytes(); text=data.decode('utf-8')
+            self.assertEqual(hashlib.sha256(data).hexdigest(),s[hash_field])
+            self.assertIn(s['report_id'],text); self.assertNotIn('PRIVATE_TEST_SECRET',text)
+        self.assertIn('<a href=',Path(s['html_path']).read_text(encoding='utf-8'))
+        self.assertFalse((self.root/'reports/latest.md').exists())
+
+    def test_lock_prevents_overlapping_run(self):
+        with image_store_lock(self.db):
+            self.assertEqual(self.run_daily(),1)
+        self.assertEqual(self.calls,[])
+
+    def test_write_failure_is_failed_not_complete(self):
+        with patch.object(reports,'atomic',side_effect=PermissionError('test')):
+            self.assertEqual(self.run_daily(),1)
+        self.assertEqual(self.status()['status'],'failed')
+
+    def test_overwrite_failure_restores_previous_pair(self):
+        self.run_daily(); md=self.root/'reports/2026-10-29.md'; old=md.read_bytes()
+        original=reports.atomic
+        counter=[0]
+        def fail_once(path,data):
+            counter[0]+=1
+            if counter[0]==2: raise PermissionError('test')
+            return original(path,data)
+        with patch.object(reports,'atomic',side_effect=fail_once):
+            self.assertEqual(self.run_daily(),1)
+        self.assertEqual(md.read_bytes(),old)
+
+    def test_beijing_date_missed_schedule_uses_actual_execution_date(self):
+        utc=datetime(2026,10,30,1,51,tzinfo=timezone.utc)
+        self.run_daily(now=utc)
+        self.assertEqual(self.status()['report_date'],'2026-10-30')
+        script=(Path(__file__).parent/'register_daily_task.ps1').read_text(encoding='utf-8-sig')
+        self.assertIn('StartWhenAvailable',script); self.assertIn('IgnoreNew',script)
+        self.assertIn('AddHours(10)',script)
+
+    def test_time_limit_still_writes_partial(self):
+        self.assertEqual(self.run_daily(monotonic=lambda:10000 if self.calls else 0,
+            transport=lambda kind,value,timeout: self.calls.append(kind) or FEED),2)
+        self.assertEqual(self.status()['status'],'partial')
+
+    def test_unverified_date_is_not_promoted_to_fact(self):
+        value=envelope(); obj=json.loads(value['choices'][0]['message']['content'])
+        obj['events'][0]['time']='明天'; obj['events'][0]['evidence']['time']='明天'
+        value['choices'][0]['message']['content']=json.dumps(obj)
+        result=validate(value,{'title':'测试','content':'明天'})
+        self.assertIsNone(result['events'][0]['time'])
+
+    def test_invalid_single_source_does_not_cancel_report(self):
+        self.value['sources'].append({'name':'坏网址','url':'file:///test'})
+        self.write_config()
+        self.assertEqual(self.run_daily(),2)
+        self.assertEqual(self.status()['sources_success'],1)
+
+    def test_poster_is_checked_copied_and_sent_with_text(self):
+        feed=FEED.replace(b'</description>',b'&lt;img src="https://example.com/image.png"/&gt;</description>')
+        payloads=[]
+        def transport(kind,value,timeout):
+            if kind=='api':
+                payloads.append(value)
+                return envelope()
+            return png() if 'image.png' in value else feed
+        self.assertEqual(self.run_daily(transport=transport),0)
+        self.assertEqual(len(list((self.root/'image_store').rglob('*.png'))),1)
+        self.assertTrue(any(b.get('type')=='image_url' for b in payloads[0]['messages'][1]['content']))
+
+    def test_network_worker_hard_timeout_can_be_terminated(self):
+        # 仅使用明确禁止的本机目标，绝不访问真实服务；极短预算验证子进程中止。
+        with self.assertRaises(TimeoutError):
+            daily.bounded('fetch','http://127.0.0.1/',0.001)
+
+if __name__=='__main__': unittest.main()

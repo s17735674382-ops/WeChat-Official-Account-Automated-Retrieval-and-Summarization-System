@@ -1,0 +1,26 @@
+{
+  "sources": [
+    {
+      "name": "NASA 官方 RSS",
+      "url": "https://www.nasa.gov/feed/"
+    }
+  ],
+  "max_articles": 10,
+  "timeout_seconds": 20,
+  "deepseek": {
+    "base_url": "https://api.deepseek.com",
+    "model": "deepseek-flash",
+    "paid_api_enabled": false
+  },
+  "daily": {
+    "enabled": false,
+    "max_api_calls": 10,
+    "api_timeout_seconds": 60,
+    "api_retries": 0,
+    "rss_timeout_seconds": 20,
+    "rss_retries": 1,
+    "total_timeout_seconds": 540,
+    "collection_timeout_seconds": 300,
+    "max_images_per_article": 3
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "release": "v0.6-public",
+  "checked_at_date": "2026-10-29",
+  "free_tests_passed": 70,
+  "sensitive_scan_hits": 0,
+  "real_subscription_names_urls_and_ids_excluded": true,
+  "user_environment_key_checked": true,
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 32,
+      "sha256": "74f066599d3fe2817756c3e532a869d370d4294c5c0a188487da2855f9b2378e"
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 294,
+      "sha256": "747f9e0a87c9d384ba68198c86419db24f2821922566719ad61455653a3427e8"
+    },
+    {
+      "path": "config.example.json",
+      "bytes": 559,
+      "sha256": "5d5fd6e65b89fd4831846323e7f1bad38ce0dd0be2485434855c7c50d2971bae"
+    },
+    {
+      "path": "daily_analysis.py",
+      "bytes": 5150,
+      "sha256": "d0e80975e8ba3af617586fb6a935ac9c0dbf22c4bfa81259c1dff715160afad5"
+    },
+    {
+      "path": "daily_pipeline.py",
+      "bytes": 23993,
+      "sha256": "89d69c5fbd012ee23cab9ffd1eb340f429b3d16aba927b1de6e3c96b71500660"
+    },
+    {
+      "path": "daily_reports.py",
+      "bytes": 8719,
+      "sha256": "91632160ca27bf6a9ca6664067c36dbe3428e44362c8be96fe874a684fa39395"
+    },
+    {
+      "path": "data_management.py",
+      "bytes": 23328,
+      "sha256": "9ec52b362883c42c604d2acef6213777e24af5d8ca9f882c2c2687f072da0bbf"
+    },
+    {
+      "path": "deepseek_analysis.py",
+      "bytes": 20331,
+      "sha256": "68fe4bff0de6720cc3e8f1b0016e8eec34475a8edb54fdbeb9509b4eea3f2444"
+    },
+    {
+      "path": "docs/cloud-method.md",
+      "bytes": 3190,
+      "sha256": "f420a5a843859a8706f20b30900e895e66efb703a7e1fc656d24cd6c3f56f898"
+    },
+    {
+      "path": "docs/deepseek-method.md",
+      "bytes": 3299,
+      "sha256": "2948dfa06eede8f684bc831da250b7849932fe258e21eff72bdf7af75f8da712"
+    },
+    {
+      "path": "docs/environment-and-services.md",
+      "bytes": 3113,
+      "sha256": "34c003ea683b14d2fd633b75f097e95c02e8b2a49292a474b10a41f0cbf32258"
+    },
+    {
+      "path": "docs/privacy-and-publishing.md",
+      "bytes": 1689,
+      "sha256": "866b107dce2023fc0619018262cc53f284b0079627fd2633d156e8de39cd55c3"
+    },
+    {
+      "path": "docs/release-check.md",
+      "bytes": 1636,
+      "sha256": "4c22c94a4f109ab7c53d7326538f03db504dfdb913306123c10018aef2fafd53"
+    },
+    {
+      "path": "docs/subscriptions.md",
+      "bytes": 3812,
+      "sha256": "4951401a08f9c79beb677f23fa3fa2dca6f21040296d4ad5b41a7f7f389e3a54"
+    },
+    {
+      "path": "find_python.ps1",
+      "bytes": 843,
+      "sha256": "0153169ff265537e3d80de3d05929d221251ca16de7869e0df06b08f895ad3af"
+    },
+    {
+      "path": "image_import.py",
+      "bytes": 12693,
+      "sha256": "faf10e13e727d791de7dd6f53a2c12cc653b50719aa8e8347e886eda94e759b4"
+    },
+    {
+      "path": "main.py",
+      "bytes": 11006,
+      "sha256": "bc7c9d462bb01ea112e300658bfe03c07302da497e7097ff0cdf2f94d95575de"
+    },
+    {
+      "path": "README.md",
+      "bytes": 7420,
+      "sha256": "297c9cf6a11d469ba898999158f902335a68e7c14d265e31cd38c4d0d64cf4e6"
+    },
+    {
+      "path": "register_daily_task.ps1",
+      "bytes": 1504,
+      "sha256": "124eed6089c3a7c4f833b6472650cf283805d6fab0dc0318ad5f55d89a50b06e"
+    },
+    {
+      "path": "run_scheduled_daily.ps1",
+      "bytes": 461,
+      "sha256": "e0114408e447c2d73fb73a98af62759398d76dc60608442ae1ea1224c24fa8c7"
+    },
+    {
+      "path": "safe_http.py",
+      "bytes": 5499,
+      "sha256": "1c31f2cc047a6b6c0e8ede9697189373917471182ff8eb95d411df0df2d2f937"
+    },
+    {
+      "path": "test_daily.py",
+      "bytes": 10082,
+      "sha256": "6f90a9ff6796e88fdbfdf35b4abfc818a7ed8cbd081cb597c3853c7452b8ab2c"
+    },
+    {
+      "path": "test_v03.py",
+      "bytes": 9947,
+      "sha256": "87312bf8814c7c83d2708cf3f487b2760f3cc2f38c1cdc55c4f9b2df98dc32e2"
+    },
+    {
+      "path": "test_v04.py",
+      "bytes": 15429,
+      "sha256": "486eb0e779884bd14f6f1c1b4165be74b88d9665d5766ad19e85839ea21c5b5e"
+    },
+    {
+      "path": "test_v041.py",
+      "bytes": 16407,
+      "sha256": "a588b852237659a79639569dec01775d2f838b92cf53abaf9adcf2fb3b416cf5"
+    },
+    {
+      "path": "test_wechat2rss.py",
+      "bytes": 9000,
+      "sha256": "956dc876fd4c8ba6541cefa9e446c52ba17b45b860e315077f86729ac555fc86"
+    },
+    {
+      "path": "wechat.py",
+      "bytes": 11812,
+      "sha256": "e30012749f1585f51963079bba87a447948314a231fa53b414be7d67eb0a06af"
+    },
+    {
+      "path": "wechat2rss.py",
+      "bytes": 20038,
+      "sha256": "891d0261dfbcfc22179b1e60d1bb1db12223b7605094662b0ded80a556f92981"
+    }
+  ]
+}
