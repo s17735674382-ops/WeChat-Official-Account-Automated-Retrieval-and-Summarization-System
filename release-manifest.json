@@ -2,7 +2,7 @@
   "release": "v0.6-public",
   "project_name": "大学信息雷达",
   "checked_at_date": "2026-10-30",
-  "free_tests_passed": 74,
+  "free_tests_passed": 80,
   "sensitive_scan_hits": 0,
   "real_subscription_names_urls_and_ids_excluded": true,
   "user_environment_key_checked": true,
@@ -24,8 +24,8 @@
     },
     {
       "path": "daily_analysis.py",
-      "bytes": 5150,
-      "sha256": "d0e80975e8ba3af617586fb6a935ac9c0dbf22c4bfa81259c1dff715160afad5"
+      "bytes": 6607,
+      "sha256": "2d49a76a428afe4e775c567d90e9fc442bc798dbddcd9daf7ff08ee2cfb5d2a3"
     },
     {
       "path": "daily_pipeline.py",
@@ -34,8 +34,8 @@
     },
     {
       "path": "daily_reports.py",
-      "bytes": 8871,
-      "sha256": "fd46ca1b86c19f1cf59c3bd22e0058a6cf4234de75b4648027a7f7a4076c1798"
+      "bytes": 10592,
+      "sha256": "f80f1a55ee5937d9686fd98aeb933d54090c7cc095f158f1bd845a4a64697e3e"
     },
     {
       "path": "data_management.py",
@@ -54,8 +54,8 @@
     },
     {
       "path": "docs/deepseek-method.md",
-      "bytes": 3719,
-      "sha256": "672fb42d8a8e51bb239b27fdaaafde2bcf997027ce34b0c5f0477eea89767929"
+      "bytes": 3995,
+      "sha256": "e91c679e8640b319d549208b766d0362bed4e14a202ca5b9d99e5c64337720db"
     },
     {
       "path": "docs/environment-and-services.md",
@@ -64,8 +64,8 @@
     },
     {
       "path": "docs/harness-push.md",
-      "bytes": 7963,
-      "sha256": "064bc6232d507b216f88bf7caeeeae7347c704141e49e3c5ef7a3111fad56f84"
+      "bytes": 8216,
+      "sha256": "bf2d82fc8a3210845332d7d2ae8ea6edca4fcb6ca4246eb1f47f6293d952b8e2"
     },
     {
       "path": "docs/privacy-and-publishing.md",
@@ -75,7 +75,7 @@
     {
       "path": "docs/release-check.md",
       "bytes": 1606,
-      "sha256": "88a05ec5be19844852cd34686dd91134775f333e270bd7a3fbb912b080c1a887"
+      "sha256": "e1420c1cef68242dc3072441c5bb886d286fa4513a067f66317c43be931a5ee4"
     },
     {
       "path": "docs/subscriptions.md",
@@ -99,8 +99,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 9431,
-      "sha256": "53df3a7d0f67187ec1a5156b6aaccc449e3da460277991f141f49caeca8af682"
+      "bytes": 9925,
+      "sha256": "d993bdad3ad86b992d2e0e33b5a6cbbb2f884f1a5bcf62e88d5c57d7b75c1a7a"
     },
     {
       "path": "register_daily_task.ps1",
@@ -119,8 +119,8 @@
     },
     {
       "path": "test_daily.py",
-      "bytes": 12597,
-      "sha256": "1303d105ba3171a293317e4ebcd77101c50c5ba0a85e9819a265945c90715e82"
+      "bytes": 15964,
+      "sha256": "3ff2db5cb71bd4cc8bec2bace78025c5577c2766274174cea7718bede0846670"
     },
     {
       "path": "test_v03.py",

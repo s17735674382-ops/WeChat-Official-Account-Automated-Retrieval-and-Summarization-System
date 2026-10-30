@@ -142,6 +142,48 @@ class DailyTests(unittest.TestCase):
             self.value['daily']['max_api_calls']=invalid; self.write_config()
             with self.assertRaises(ValueError): daily.config(self.cfg)
 
+    def test_general_news_summary_is_requested_and_validated(self):
+        from daily_analysis import make_payload
+        article={'title':'校园新闻','content':'学校图书馆完成设备更新。','source_name':'测试'}
+        payload=make_payload(article,[])
+        self.assertIn('非活动文章也要概括',payload['messages'][1]['content'][0]['text'])
+        obj={'ocr_text':None,'events':[],'article_summary':'图书馆设备已更新。',
+             'article_summary_evidence':article['content'],'article_category':'其他资讯'}
+        value=envelope(); value['choices'][0]['message']['content']=json.dumps(obj)
+        self.assertEqual(validate(value,article)['article_summary'],obj['article_summary'])
+
+    def test_unproven_summary_and_unknown_category_are_not_guessed(self):
+        obj={'ocr_text':None,'events':[],'article_summary':'编造内容','article_summary_evidence':'不存在证据','article_category':'新奇类别'}
+        value=envelope();value['choices'][0]['message']['content']=json.dumps(obj)
+        result=validate(value,{'title':'测试','content':'原始文字'})
+        self.assertIsNone(result['article_summary']);self.assertIsNone(result['article_category'])
+
+    def test_featured_other_and_unclassified_articles_all_appear(self):
+        self.run_daily();s=self.status()
+        event=json.loads(envelope()['choices'][0]['message']['content'])['events'][0]
+        articles=[{'id':1,'title':'重点文章','source_url':'https://example.com/one','result':{'events':[event,dict(event,category=None,name='未归类事项',summary=None)]}},
+                  {'id':2,'title':'一般新闻','source_url':'https://example.com/two','result':{'events':[],'article_category':'其他资讯','article_summary':'图书馆设备更新。'}},
+                  {'id':3,'title':'分类未知文章','source_url':'https://example.com/three','content':'这是保留下来的原文。下一句。','result':{'events':[]}}]
+        md,page=reports.render(s,articles,[])
+        for value in ['未归类事项','一般新闻','图书馆设备更新','分类未知文章','这是保留下来的原文','无法归类']:
+            self.assertIn(value,md);self.assertIn(value,page)
+        for url in ['https://example.com/one','https://example.com/two','https://example.com/three']:self.assertIn(url,md)
+
+    def test_old_results_use_body_or_ocr_without_new_api_call(self):
+        self.assertEqual(reports.brief({'content':'第一句。第二句。','result':{'events':[]}}),'正文摘录：第一句。')
+        self.assertEqual(reports.brief({'content':'','result':{'events':[],'ocr_text':'海报首句。其余。'}}),'图片文字摘录：海报首句。')
+
+    def test_pending_title_only_article_is_not_dropped(self):
+        self.run_daily();article={'id':10,'title':'正文尚未读到','source_url':'https://example.com/pending'}
+        md,_=reports.render(self.status(),[article],[])
+        self.assertIn('正文尚未读到',md);self.assertIn('暂无法概括',md);self.assertIn('待分析',md)
+
+    def test_legacy_visual_summary_is_preserved_without_events(self):
+        from daily_analysis import legacy_result
+        result=legacy_result({'summary':'一般资讯的旧摘要。'})
+        self.assertEqual(result['article_summary'],'一般资讯的旧摘要。')
+        self.assertEqual(result['events'],[])
+
     def test_empty_report_sections_and_unknown_fields_are_omitted(self):
         self.run_daily(); status=self.status()
         md,page=reports.render(status,[],[])

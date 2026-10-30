@@ -31,6 +31,24 @@ def clean(value, secrets):
     text = re.sub(r'https?://[^\s<>"）]+', '[网址请见原文链接]', text)
     return ''.join(c for c in text if c in '\n\t' or ord(c) >= 32)
 
+def brief(article):
+    """优先使用已有摘要；旧记录不重新付费，退回有明确标记的原文摘录。"""
+    result = article.get('result') or {}
+    summary = result.get('article_summary')
+    if not summary:
+        summary = next((e.get('summary') for e in result.get('events',[]) if e.get('summary')),None)
+    if summary:
+        prefix = '一句话概括：'
+        source = summary
+    else:
+        source = article.get('content') or result.get('ocr_text') or ''
+        prefix = '正文摘录：' if article.get('content') else '图片文字摘录：'
+    source = ' '.join(source.split())
+    if not source:
+        return '仅有标题，正文或图片文字不足，暂无法概括，请核对原文。'
+    sentence = re.split(r'(?<=[。！？!?])\s*|(?<=\.)\s+',source,maxsplit=1)[0]
+    return prefix + sentence[:160] + ('…' if len(sentence)>160 else '')
+
 def render(status, articles, failures, secrets=()):
     lines = []
     def text(value):
@@ -55,7 +73,7 @@ def render(status, articles, failures, secrets=()):
         found = False
         for article in articles:
             for event in (article.get('result') or {}).get('events', []):
-                if (event.get('category') or CATEGORIES[-1]) != category:
+                if event.get('category') != category:
                     continue
                 if not found:
                     lines += ['## ' + category, '']
@@ -88,13 +106,26 @@ def render(status, articles, failures, secrets=()):
     if deadlines:
         lines += ['## 近期截止事项（未来7天）', '']
         lines += [f'- {due}：{text(name)} · {link(article)}' for due, name, article in sorted(deadlines, key=lambda x: x[0])]
-    other_lines = []
+    other_lines, unclassified_lines = [], []
     for article in articles:
-        if article['id'] not in featured:
-            label = '已分析，未提取重点活动' if article.get('result') else '待分析'
-            other_lines += [f"- {text(article['title'])} · {link(article)} · {label}"]
+        result = article.get('result') or {}
+        unknown = [e for e in result.get('events',[]) if e.get('category') not in CATEGORIES]
+        if article['id'] not in featured or unknown:
+            label = '已分析' if article.get('result') else '待分析，尚不能判断信息价值'
+            if unknown:
+                for event in unknown:
+                    information = event.get('summary') or event.get('name') or brief(article)
+                    unclassified_lines.append(f"- {text(article['title'])} · 未归类条目：{text(information)} · {link(article)} · {label}")
+                continue
+            line = f"- {text(article['title'])} · {text(brief(article))} · {link(article)} · {label}"
+            if result.get('article_category') in CATEGORIES + ['其他资讯']:
+                other_lines.append(line)
+            else:
+                unclassified_lines.append(line)
     if other_lines:
-        lines += ['', '## 其他文章与待分析文章', ''] + other_lines
+        lines += ['', '## 其他资讯（一句话概括）', ''] + other_lines
+    if unclassified_lines:
+        lines += ['', '## 无法归类与待分析信息（一句话概括）', ''] + unclassified_lines
     error_lines = ['- ' + text(failure) for failure in failures]
     for article in articles:
         if not article.get('result') or article.get('warning'):
