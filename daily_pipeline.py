@@ -21,7 +21,7 @@ from safe_http import fetch_public
 
 BJ = timezone(timedelta(hours=8))
 ROOT = Path(__file__).resolve().parent
-DEFAULTS = {'enabled': True, 'max_api_calls': 10, 'api_timeout_seconds': 60,
+DEFAULTS = {'enabled': True, 'max_api_calls': None, 'api_timeout_seconds': 60,
             'api_retries': 0, 'rss_timeout_seconds': 20, 'rss_retries': 1,
             'total_timeout_seconds': 540, 'collection_timeout_seconds': 300,
             'max_images_per_article': 3}
@@ -113,7 +113,10 @@ def config(path):
     options = DEFAULTS | value.get('daily', {})
     if type(options['enabled']) is not bool:
         raise ValueError('daily.enabled 必须为 true/false')
-    ranges = {'max_api_calls': (0,100), 'api_timeout_seconds': (5,120), 'api_retries': (0,1),
+    limit = options['max_api_calls']
+    if limit is not None and (type(limit) is not int or limit < 0):
+        raise ValueError('daily.max_api_calls 必须为 null（不限次数）或非负整数')
+    ranges = {'api_timeout_seconds': (5,120), 'api_retries': (0,1),
               'rss_timeout_seconds': (1,60), 'rss_retries': (0,2), 'total_timeout_seconds': (30,1200),
               'collection_timeout_seconds': (1,600), 'max_images_per_article': (0,6)}
     for key, (low, high) in ranges.items():
@@ -256,7 +259,7 @@ def run(db_path=DB_PATH, config_path=ROOT/'config.json', *, report_only=False, r
                         c.execute("INSERT OR REPLACE INTO daily_ai VALUES(?,'success',?,NULL,NULL,?,?)",(aid,json.dumps(result,ensure_ascii=False),settings['model'],clock().isoformat())); c.commit()
                         continue
                     used = c.execute('SELECT COUNT(*) FROM daily_attempts WHERE report_date=?',(day,)).fetchone()[0]
-                    if report_only or not opt['enabled'] or not settings['paid_api_enabled'] or used>=opt['max_api_calls'] or monotonic()>=end:
+                    if report_only or not opt['enabled'] or not settings['paid_api_enabled'] or (opt['max_api_calls'] is not None and used>=opt['max_api_calls']) or monotonic()>=end:
                         continue
                     warning = None
                     images = []
@@ -300,7 +303,7 @@ def run(db_path=DB_PATH, config_path=ROOT/'config.json', *, report_only=False, r
                         continue
                     for attempt in range(1+opt['api_retries']):
                         used = c.execute('SELECT COUNT(*) FROM daily_attempts WHERE report_date=?',(day,)).fetchone()[0]
-                        if used>=opt['max_api_calls'] or monotonic()>=end:
+                        if (opt['max_api_calls'] is not None and used>=opt['max_api_calls']) or monotonic()>=end:
                             break
                         # 先落盘占用调用额度，中断后不自动再发付费请求。
                         cur = c.execute("INSERT INTO daily_attempts(report_date,article_id,started_at,status) VALUES(?,?,?,'running')",(day,aid,clock().isoformat()))

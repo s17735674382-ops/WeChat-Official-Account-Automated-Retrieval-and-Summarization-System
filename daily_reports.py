@@ -52,18 +52,24 @@ def render(status, articles, failures, secrets=()):
     deadlines = []
     featured = set()
     for category in CATEGORIES:
-        lines += ['## ' + category, '']
         found = False
         for article in articles:
             for event in (article.get('result') or {}).get('events', []):
                 if (event.get('category') or CATEGORIES[-1]) != category:
                     continue
-                found = True
+                if not found:
+                    lines += ['## ' + category, '']
+                    found = True
                 featured.add(article['id'])
-                lines += [f"### {text(event.get('name') or article['title'])}", '',
-                          f"时间：{text(event.get('time'))}；地点：{text(event.get('location'))}；报名截止：{text(event.get('deadline'))}。",
-                          f"主办：{text(event.get('organizer'))}；对象：{text(event.get('audience'))}；报名：{text(event.get('registration'))}。",
-                          f"简介：{text(event.get('summary'))}", link(article) + ' · AI 自动提取，关键日期与图片文字请核对原文。', '']
+                lines += [f"### {text(event.get('name') or article['title'])}", '']
+                for fields in [(('time','时间'),('location','地点'),('deadline','报名截止')),
+                               (('organizer','主办'),('audience','对象'),('registration','报名'))]:
+                    values = [label+'：'+text(event[field]) for field,label in fields if event.get(field)]
+                    if values:
+                        lines += ['；'.join(values)+'。']
+                if event.get('summary'):
+                    lines += ['简介：'+text(event['summary'])]
+                lines += [link(article) + ' · AI 自动提取，关键日期与图片文字请核对原文。', '']
                 for field, quote in event.get('evidence', {}).items():
                     if quote and event.get(field):
                         lines += [f"- {text(field)} 原文证据：{text(quote)}"]
@@ -79,20 +85,22 @@ def render(status, articles, failures, secrets=()):
                             deadlines.append((due.isoformat(), event.get('name') or article['title'], article))
                     except ValueError:
                         pass
-        if not found:
-            lines += ['本轮已完成分析中未提取到可确认事项。', '']
-    lines += ['## 近期截止事项（未来7天）', '']
-    lines += [f'- {due}：{text(name)} · {link(article)}' for due, name, article in sorted(deadlines, key=lambda x: x[0])] or ['暂无可确认的近期截止事项。']
-    lines += ['', '## 其他文章与待分析文章', '']
+    if deadlines:
+        lines += ['## 近期截止事项（未来7天）', '']
+        lines += [f'- {due}：{text(name)} · {link(article)}' for due, name, article in sorted(deadlines, key=lambda x: x[0])]
+    other_lines = []
     for article in articles:
         if article['id'] not in featured:
             label = '已分析，未提取重点活动' if article.get('result') else '待分析'
-            lines += [f"- {text(article['title'])} · {link(article)} · {label}"]
-    lines += ['', '## 采集与分析异常', '']
-    lines += ['- ' + text(failure) for failure in failures] or ['采集与分析均已完成。']
+            other_lines += [f"- {text(article['title'])} · {link(article)} · {label}"]
+    if other_lines:
+        lines += ['', '## 其他文章与待分析文章', ''] + other_lines
+    error_lines = ['- ' + text(failure) for failure in failures]
     for article in articles:
         if not article.get('result') or article.get('warning'):
-            lines += [f"- {text(article['title'])} · {link(article)} · {text(article.get('warning') or '待分析；不能据此判断文章没有价值')}"]
+            error_lines += [f"- {text(article['title'])} · {link(article)} · {text(article.get('warning') or '待分析；不能据此判断文章没有价值')}"]
+    if error_lines:
+        lines += ['', '## 采集与分析异常', ''] + error_lines
     lines += ['', '采集覆盖提示：RSS 可能仅保留有限篇文章，每日一次可能漏掉已被源移除的内容；报告不承诺公众号历史全量覆盖。', '']
     markdown = '\n'.join(lines)
     # HTML 只渲染本程序产生的 Markdown 子集，源数据始终作为文本转义。

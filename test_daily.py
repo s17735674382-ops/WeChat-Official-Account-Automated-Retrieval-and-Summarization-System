@@ -118,6 +118,50 @@ class DailyTests(unittest.TestCase):
         body=Path(self.status()['markdown_path']).read_text(encoding='utf-8')
         self.assertIn('讲座',body); self.assertIn('https://mp.weixin.qq.com/s/test',body)
 
+    def test_default_unlimited_analyzes_more_than_ten_articles(self):
+        import xml.etree.ElementTree as ET
+        root=ET.fromstring(FEED); item=next(root.iter('item'))
+        entries=[]
+        for n in range(12):
+            node=ET.fromstring(ET.tostring(item))
+            node.find('guid').text='test-guid-'+str(n)
+            node.find('link').text='https://mp.weixin.qq.com/s/test-'+str(n)
+            entries.append(ET.tostring(node))
+        feed='<rss><channel><title>测试</title>'.encode()+b''.join(entries)+b'</channel></rss>'
+        def transport(kind,value,timeout):
+            self.calls.append(kind)
+            return feed if kind=='fetch' else envelope()
+        self.assertEqual(self.run_daily(transport=transport),0)
+        self.assertEqual(self.calls.count('api'),12)
+        self.assertEqual(self.status()['articles_analyzed'],12)
+
+    def test_explicit_null_limit_and_invalid_limits(self):
+        self.value['daily']['max_api_calls']=None; self.write_config()
+        self.assertIsNone(daily.config(self.cfg)[1]['max_api_calls'])
+        for invalid in (-1,True,'unlimited'):
+            self.value['daily']['max_api_calls']=invalid; self.write_config()
+            with self.assertRaises(ValueError): daily.config(self.cfg)
+
+    def test_empty_report_sections_and_unknown_fields_are_omitted(self):
+        self.run_daily(); status=self.status()
+        md,page=reports.render(status,[],[])
+        self.assertNotIn('## ',md)
+        self.assertNotIn('<h2>',page)
+        event={k:None for k in FIELDS}; event.update(name='测试活动',category=CATEGORIES[0],evidence={})
+        article={'id':1,'title':'测试文章','source_url':'https://example.com/article','result':{'events':[event]}}
+        md,page=reports.render(status,[article],[])
+        self.assertIn('学术讲座与论坛',md)
+        for absent in ['## 竞赛','近期截止事项','其他文章与待分析文章','采集与分析异常','地点：','未确认']:
+            self.assertNotIn(absent,md); self.assertNotIn(absent,page)
+
+    def test_fault_report_keeps_warning_without_empty_categories(self):
+        def fail(*args): raise TimeoutError()
+        self.run_daily(transport=fail)
+        md=Path(self.status()['markdown_path']).read_text(encoding='utf-8')
+        self.assertIn('数据不完整',md); self.assertIn('无法确认是否有新增信息',md)
+        self.assertIn('## 采集与分析异常',md)
+        self.assertNotIn('## 学术讲座',md); self.assertNotIn('## 近期截止',md)
+
     def test_status_hashes_report_identifiers_utf8_and_no_secret(self):
         self.run_daily(); s=self.status()
         for field,hash_field in [('markdown_path','markdown_sha256'),('html_path','html_sha256')]:

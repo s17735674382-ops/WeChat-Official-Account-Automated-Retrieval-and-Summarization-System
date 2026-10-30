@@ -14,7 +14,7 @@
   },
   "daily": {
     "enabled": false,
-    "max_api_calls": 10,
+    "max_api_calls": null,
     "api_timeout_seconds": 60,
     "api_retries": 0,
     "rss_timeout_seconds": 20,
