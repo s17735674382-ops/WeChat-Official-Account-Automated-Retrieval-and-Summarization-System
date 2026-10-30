@@ -33,7 +33,7 @@ class DailyTests(unittest.TestCase):
         self.db = self.root/'articles.db'
         self.cfg = self.root/'config.json'
         self.value = {'sources':[{'name':'【测试】源','url':'https://example.com/rss?token=PRIVATE_TEST_SECRET'}],
-                      'deepseek':{'paid_api_enabled':True},'daily':{'rss_retries':0}}
+                      'deepseek':{'paid_api_enabled':True},'daily':{'rss_retries':0,'editorial_enabled':False}}
         self.write_config()
         self.block = patch('socket.create_connection',side_effect=AssertionError('禁止真实网络'))
         self.block.start(); self.addCleanup(self.block.stop)

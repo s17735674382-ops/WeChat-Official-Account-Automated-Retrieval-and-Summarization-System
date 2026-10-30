@@ -21,7 +21,7 @@ from safe_http import fetch_public
 
 BJ = timezone(timedelta(hours=8))
 ROOT = Path(__file__).resolve().parent
-DEFAULTS = {'enabled': True, 'max_api_calls': None, 'api_timeout_seconds': 60,
+DEFAULTS = {'enabled': True, 'editorial_enabled': True, 'max_api_calls': None, 'api_timeout_seconds': 60,
             'api_retries': 0, 'rss_timeout_seconds': 20, 'rss_retries': 1,
             'total_timeout_seconds': 540, 'collection_timeout_seconds': 300,
             'max_images_per_article': 3}
@@ -113,6 +113,8 @@ def config(path):
     options = DEFAULTS | value.get('daily', {})
     if type(options['enabled']) is not bool:
         raise ValueError('daily.enabled 必须为 true/false')
+    if type(options['editorial_enabled']) is not bool:
+        raise ValueError('daily.editorial_enabled 必须为 true/false')
     limit = options['max_api_calls']
     if limit is not None and (type(limit) is not int or limit < 0):
         raise ValueError('daily.max_api_calls 必须为 null（不限次数）或非负整数')
@@ -346,7 +348,35 @@ def run(db_path=DB_PATH, config_path=ROOT/'config.json', *, report_only=False, r
                           'sources_total':len(feeds),'sources_success':success,'sources_failed':len(feeds)-success,
                           'articles_new':c.execute('SELECT COUNT(*) FROM daily_queue q JOIN daily_members m ON m.article_id=q.article_id WHERE m.report_date=? AND q.discovered_at>?',(day,window)).fetchone()[0],
                           'articles_analyzed':analyzed,'articles_pending':pending}
-                markdown, document = render(status,articles,failures,secrets)
+                from daily_editor import choose_plan
+                base_markdown, _ = render(status,articles,failures,secrets)
+                editorial_attempt_id=None
+                def editorial_request(payload):
+                    nonlocal editorial_attempt_id
+                    used=c.execute('SELECT COUNT(*) FROM daily_attempts WHERE report_date=?',(day,)).fetchone()[0]
+                    if monotonic()>=end or (opt['max_api_calls'] is not None and used>=opt['max_api_calls']):
+                        raise TimeoutError('没有剩余编排预算')
+                    cur=c.execute("INSERT INTO daily_attempts(report_date,article_id,started_at,status) VALUES(?,NULL,?,'running')",(day,clock().isoformat()))
+                    attempt_id=cur.lastrowid;editorial_attempt_id=attempt_id;c.commit()
+                    try:
+                        response=transport('api',payload,min(opt['api_timeout_seconds'],end-monotonic()))
+                        c.execute("UPDATE daily_attempts SET status='received' WHERE id=?",(attempt_id,));c.commit()
+                        return response
+                    except Exception:
+                        c.execute("UPDATE daily_attempts SET status='failed' WHERE id=?",(attempt_id,));c.commit()
+                        raise
+                layout=None;mode='local'
+                if opt['editorial_enabled'] and articles:
+                    used=c.execute('SELECT COUNT(*) FROM daily_attempts WHERE report_date=?',(day,)).fetchone()[0]
+                    allowed=not report_only and opt['enabled'] and settings['paid_api_enabled'] and monotonic()<end and (opt['max_api_calls'] is None or used<opt['max_api_calls'])
+                    layout,mode=choose_plan(base_markdown.splitlines(),reports/'.editorial_cache',editorial_request if allowed else None)
+                    if editorial_attempt_id is not None:
+                        c.execute('UPDATE daily_attempts SET status=? WHERE id=?',('success' if mode=='ai' else 'failed',editorial_attempt_id));c.commit()
+                    if mode=='fallback':
+                        status['status']='partial'
+                        failures.append('AI编排未完成或校验未通过，已保留全部内容并使用本地备用格式。')
+                status['editorial_status']=mode
+                markdown, document = render(status,articles,failures,secrets,layout=layout)
                 publish(reports,status,markdown,document)
                 c.execute('UPDATE daily_runs SET cutoff_at=?,status=?,report_id=?,generated_at=? WHERE report_date=?',
                           (cutoff,status['status'],report_id,status['generated_at'],day)); c.commit()

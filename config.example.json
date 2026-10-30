@@ -21,6 +21,7 @@
     "rss_retries": 1,
     "total_timeout_seconds": 540,
     "collection_timeout_seconds": 300,
-    "max_images_per_article": 3
+    "max_images_per_article": 3,
+    "editorial_enabled": true
   }
 }

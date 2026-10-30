@@ -49,7 +49,7 @@ def brief(article):
     sentence = re.split(r'(?<=[。！？!?])\s*|(?<=\.)\s+',source,maxsplit=1)[0]
     return prefix + sentence[:160] + ('…' if len(sentence)>160 else '')
 
-def render(status, articles, failures, secrets=()):
+def render(status, articles, failures, secrets=(), layout=None):
     lines = []
     def text(value):
         return html.escape(clean(value, secrets)).replace('[', '\\[').replace(']', '\\]').replace('*', '\\*').replace('`', '\\`').replace('\n', ' ')
@@ -133,6 +133,9 @@ def render(status, articles, failures, secrets=()):
     if error_lines:
         lines += ['', '## 采集与分析异常', ''] + error_lines
     lines += ['', '采集覆盖提示：RSS 可能仅保留有限篇文章，每日一次可能漏掉已被源移除的内容；报告不承诺公众号历史全量覆盖。', '']
+    if layout is not None:
+        from daily_editor import apply_plan
+        lines = apply_plan(lines, layout)
     markdown = '\n'.join(lines)
     # HTML 只渲染本程序产生的 Markdown 子集，源数据始终作为文本转义。
     body = []

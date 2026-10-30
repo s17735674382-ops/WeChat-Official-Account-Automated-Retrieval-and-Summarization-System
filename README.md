@@ -56,6 +56,10 @@ python -B -X utf8 .\main.py
 
 ## 每日日报
 
+报告格式由AI根据当天内容自由编排，前面的栏目和分类只是参考。`daily.editorial_enabled=true` 时，在文章分析后可额外请求一次AI来决定标题、分组、顺序和卡片/紧凑版式。AI只重组已有资料块，不改写事实正文；程序校验每块资料恰好出现一次，保留普通资讯、无法归类内容、原文链接与异常。统计、日期和状态作为完整性信息固定保留。
+
+同一份资料的编排结果会缓存，不重复付费；`--generate-report` 只使用缓存或本地备用格式，不发起编排请求。无文章不请求编排，API未启用、剩余时间不足或方案校验失败时使用本地格式继续出报。编排失败会明确标记partial。此项复用现有超时和可选调用次数限制，默认不重试；真实编排可能额外产生一次API费用。设 `editorial_enabled=false` 可关闭。
+
 我保留本轮全部已采集文章：重点活动详细展示，其余资讯给出一句话概括和原文链接；无法归类的条目单独展示，不硬归为校园活动，也不按“无用”删除。尚未分析或正文不足时明确标记。新分析会生成带原文证据的文章摘要；已有成功结果不重新付费分析，没有摘要的旧记录使用明确标为“正文摘录”或“图片文字摘录”的首句，资料不足则保留标题并提示核对。
 
 我只输出有内容的栏目：没有新消息的活动分类、近期截止事项、其他文章及异常栏目会自动省略，活动中缺失的时间或地点等字段也不输出空格式。若整体无新增，仍明确说明；采集失败或待分析不会被当作“没有消息”，异常警告仍保留。
@@ -108,10 +112,10 @@ $env:DEEPSEEK_API_KEY = Read-Host '输入自己的 DeepSeek API Key' -MaskInput
 ## 测试与模块
 
 ```powershell
-python -B -X utf8 -m unittest test_v03 test_v04 test_v041 test_wechat2rss test_daily -q
+python -B -X utf8 -m unittest test_v03 test_v04 test_v041 test_wechat2rss test_daily test_editor -q
 ```
 
-测试使用临时数据库、人工测试文章/纯色图片和模拟模型响应；测试成功不代表真实 OCR 已准确完成。Windows 硬链接与目录联接点测试需要相应系统权限。项目开发记录包含80项免费测试，公开副本的实际验证结果见 [发布检查](docs/release-check.md)。
+测试使用临时数据库、人工测试文章/纯色图片和模拟模型响应；测试成功不代表真实 OCR 已准确完成。Windows 硬链接与目录联接点测试需要相应系统权限。项目开发记录包含85项免费测试，公开副本的实际验证结果见 [发布检查](docs/release-check.md)。
 
 | 文件 | 作用 |
 |---|---|
@@ -121,6 +125,7 @@ python -B -X utf8 -m unittest test_v03 test_v04 test_v041 test_wechat2rss test_d
 | image_import.py / data_management.py | 图片校验、备份与删除保护 |
 | deepseek_analysis.py / daily_analysis.py | 视觉分析、日报图文分析适配 |
 | daily_pipeline.py / daily_reports.py | 每日编排与报告发布 |
+| daily_editor.py | AI自主安排栏目、顺序和版式，校验资料完整性并缓存 |
 | register_daily_task.ps1 / run_scheduled_daily.ps1 | 可选的Windows计划任务 |
 
 限制：活动和日期需人工核对；二维码不能推测报名地址；云服务不可用会影响覆盖；默认图片数量、格式和时间预算可能导致 partial。项目不包含模型权重、Wechat2RSS 商业镜像、云账号、真实账单或用户数据。
