@@ -58,6 +58,10 @@ def open_sync_database(path=DB_PATH):
                 last_error TEXT,
                 last_new_count INTEGER NOT NULL DEFAULT 0
             );
+            CREATE TABLE IF NOT EXISTS rss_retired (
+                kind TEXT NOT NULL, digest TEXT NOT NULL,
+                PRIMARY KEY(kind,digest)
+            );
             CREATE TABLE IF NOT EXISTS wechat2rss_entries (
                 id INTEGER PRIMARY KEY,
                 source_id INTEGER NOT NULL REFERENCES wechat2rss_sources(id) ON DELETE CASCADE,
@@ -274,7 +278,26 @@ def parse_feed(data, feed_url):
     return channel_title[:100], result, skipped, len(nodes) > MAX_ITEMS
 
 
+def retired_keys(feed_url, entry):
+    key = hashlib.sha256(normalized_url(feed_url).encode()).hexdigest()
+    pairs = [('stable',hashlib.sha256((key+':'+entry['stable_key']).encode()).hexdigest())]
+    if entry.get('source_url'):
+        pairs.append(('url',hashlib.sha256(entry['source_url'].encode()).hexdigest()))
+    return pairs
+
+
+def is_retired(connection, feed_url, entry):
+    # 兼容尚未升级的只读旧库。
+    if not connection.execute("SELECT 1 FROM sqlite_master WHERE name='rss_retired'").fetchone():
+        return False
+    return any(connection.execute('SELECT 1 FROM rss_retired WHERE kind=? AND digest=?',p).fetchone()
+               for p in retired_keys(feed_url,entry))
+
+
 def save_entry(connection, source_id, source_name, entry):
+    feed = connection.execute('SELECT feed_url FROM wechat2rss_sources WHERE id=?',(source_id,)).fetchone()
+    if feed and is_retired(connection,feed[0],entry):
+        return False
     if connection.execute(
         "SELECT 1 FROM wechat2rss_entries WHERE source_id = ? AND stable_key = ?",
         (source_id, entry["stable_key"]),

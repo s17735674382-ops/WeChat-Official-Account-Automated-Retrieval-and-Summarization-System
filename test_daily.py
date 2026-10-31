@@ -33,7 +33,7 @@ class DailyTests(unittest.TestCase):
         self.db = self.root/'articles.db'
         self.cfg = self.root/'config.json'
         self.value = {'sources':[{'name':'【测试】源','url':'https://example.com/rss?token=PRIVATE_TEST_SECRET'}],
-                      'deepseek':{'paid_api_enabled':True},'daily':{'rss_retries':0,'editorial_enabled':False}}
+                      'deepseek':{'paid_api_enabled':True},'daily':{'rss_retries':0,'editorial_enabled':False,'wechat_only':False}}
         self.write_config()
         self.block = patch('socket.create_connection',side_effect=AssertionError('禁止真实网络'))
         self.block.start(); self.addCleanup(self.block.stop)
@@ -151,6 +151,21 @@ class DailyTests(unittest.TestCase):
              'article_summary_evidence':article['content'],'article_category':'其他资讯'}
         value=envelope(); value['choices'][0]['message']['content']=json.dumps(obj)
         self.assertEqual(validate(value,article)['article_summary'],obj['article_summary'])
+
+    def test_manual_wechat_report_refreshes_incomplete_and_excludes_test_sources(self):
+        daily.initialize(self.db)
+        with contextlib.closing(daily.connect(self.db)) as c:
+            with c:
+                c.execute('INSERT INTO wechat2rss_sources(feed_url,name,imported_at) VALUES(?,?,?)',
+                          ('https://example.org/wechat','测试公众号',T.isoformat()))
+        empty=lambda *args: b'<rss><channel/></rss>'
+        self.assertEqual(self.run_daily(wechat_only=True,transport=empty),2)
+        self.calls.clear()
+        self.assertEqual(self.run_daily(wechat_only=True,refresh_incomplete=True),0)
+        self.assertEqual(self.calls,['fetch','api'])
+        self.assertEqual(self.status()['sources_total'],1)
+        self.assertEqual(self.status()['articles_new'],1)
+        self.assertEqual(self.status()['scope'],'wechat2rss')
 
     def test_unproven_summary_and_unknown_category_are_not_guessed(self):
         obj={'ocr_text':None,'events':[],'article_summary':'编造内容','article_summary_evidence':'不存在证据','article_category':'新奇类别'}

@@ -1,8 +1,7 @@
 {
-  "release": "v0.6-public",
   "project_name": "大学信息雷达",
-  "checked_at_date": "2026-10-30",
-  "free_tests_passed": 85,
+  "checked_at_date": "2026-10-31",
+  "free_tests_passed": 93,
   "sensitive_scan_hits": 0,
   "real_subscription_names_urls_and_ids_excluded": true,
   "user_environment_key_checked": true,
@@ -19,8 +18,8 @@
     },
     {
       "path": "config.example.json",
-      "bytes": 592,
-      "sha256": "1a7dfa8acad49ad5cdf46674c60c993cd120706566c5a2947b681204840ce7b6"
+      "bytes": 707,
+      "sha256": "ac1c1fc619b7543fea0250b0a129d943b53d98ab290e43e0f68224c24a56f0af"
     },
     {
       "path": "daily_analysis.py",
@@ -34,13 +33,18 @@
     },
     {
       "path": "daily_pipeline.py",
-      "bytes": 26717,
-      "sha256": "5632efde06733a5d295d28fc2420c8f95e470b5215fd3a15376e12c57da3513e"
+      "bytes": 29515,
+      "sha256": "34c6fd932f55cf37828ceb263e697f4d33c998c0854db578baaed31478c1e4dd"
     },
     {
       "path": "daily_reports.py",
-      "bytes": 10718,
-      "sha256": "179de4525a9d8028ea6b0ca4e915cb39e19e1f2c3e3156d0016aa82d22b5bdfd"
+      "bytes": 11066,
+      "sha256": "4df884da057153f3e551553e505165ee781ce16b0d87f3e3b3a44f6581b247d8"
+    },
+    {
+      "path": "daily_retention.py",
+      "bytes": 10452,
+      "sha256": "83d69cea5c4da55e0f454b6c20cf6335ed2a0b0302b4735e93dadb00fc45fd3c"
     },
     {
       "path": "data_management.py",
@@ -80,7 +84,7 @@
     {
       "path": "docs/release-check.md",
       "bytes": 1606,
-      "sha256": "68d8f156b4a81022ba21beb74c9c7c06e682f569975d1bdfa53b1954d2671a91"
+      "sha256": "ca6172f53f66339916298ee1683b9dd08ddbd032f92287042bb5445787abd25b"
     },
     {
       "path": "docs/subscriptions.md",
@@ -89,8 +93,8 @@
     },
     {
       "path": "find_python.ps1",
-      "bytes": 843,
-      "sha256": "0153169ff265537e3d80de3d05929d221251ca16de7869e0df06b08f895ad3af"
+      "bytes": 846,
+      "sha256": "5fcd528ee42f906851c21bb0d7af3deab087f694bea1a604a5e7be2925a5a696"
     },
     {
       "path": "image_import.py",
@@ -99,23 +103,23 @@
     },
     {
       "path": "main.py",
-      "bytes": 11006,
-      "sha256": "306c785f6026d0ed94c0a956b23fcdc9deb260ab94882725823102ee2f4d491b"
+      "bytes": 11173,
+      "sha256": "88cc1c9fc76d6514d6200f082a7dcfaa3c9f06cf4f5b06987feba32994524efe"
     },
     {
       "path": "README.md",
-      "bytes": 10943,
-      "sha256": "281aea8b8b3c7a1b91d1986566ec4820aac22270961b4a22d5c35cfedd1903c8"
+      "bytes": 13410,
+      "sha256": "a639619ab36001106772a6e283279296f36b1df8a9ac6519f2408ac5ea7900b7"
     },
     {
       "path": "register_daily_task.ps1",
-      "bytes": 1504,
-      "sha256": "9f159ec11b71bd153da05a56998ca487a3f7666e464a59fc5ffad38eca9c7efb"
+      "bytes": 1687,
+      "sha256": "296759a51dc99255c5094087a162f46bc5e80543cfce37288b6cd946c7632a0f"
     },
     {
       "path": "run_scheduled_daily.ps1",
-      "bytes": 461,
-      "sha256": "e0114408e447c2d73fb73a98af62759398d76dc60608442ae1ea1224c24fa8c7"
+      "bytes": 2427,
+      "sha256": "6626135f9f4f895f8e1da46361bb80acba692b4b607f366ba6f9f35319f41437"
     },
     {
       "path": "safe_http.py",
@@ -124,13 +128,18 @@
     },
     {
       "path": "test_daily.py",
-      "bytes": 15990,
-      "sha256": "e9d5b25068fea6dbf7b2c0ccb0903e33357c9295388b702d36e35c04f0f0db25"
+      "bytes": 16880,
+      "sha256": "41cd57a64283fea489ad2be689883b4a9ba43e4bb50327a19af84b3eba4bae37"
     },
     {
       "path": "test_editor.py",
       "bytes": 3766,
       "sha256": "6d2b7d7719d0997cce2833c435aae939fd7acf3eab6c598eb95971ff0caa95ee"
+    },
+    {
+      "path": "test_retention.py",
+      "bytes": 3864,
+      "sha256": "8373e108ad6811a9a90a21299e9c98ef7f8580177aa5b551936d403d62229f84"
     },
     {
       "path": "test_v03.py",
@@ -159,8 +168,8 @@
     },
     {
       "path": "wechat2rss.py",
-      "bytes": 20038,
-      "sha256": "891d0261dfbcfc22179b1e60d1bb1db12223b7605094662b0ded80a556f92981"
+      "bytes": 21090,
+      "sha256": "2c586ef1c032c5718d967d39002d3c5a67bb08199dc653e8423de5d7690895ba"
     }
   ]
 }

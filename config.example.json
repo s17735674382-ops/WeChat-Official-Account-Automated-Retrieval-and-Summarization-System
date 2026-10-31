@@ -22,6 +22,10 @@
     "total_timeout_seconds": 540,
     "collection_timeout_seconds": 300,
     "max_images_per_article": 3,
-    "editorial_enabled": true
+    "editorial_enabled": true,
+    "wechat_only": true,
+    "only_today_new": true,
+    "weekly_cleanup_enabled": true,
+    "retention_days": 30
   }
 }

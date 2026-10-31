@@ -228,6 +228,9 @@ def main(db_path=DB_PATH):
     print("大学信息雷达（DeepSeek 每次调用前确认；支持 Wechat2RSS 增量采集）")
     if sys.argv[1:] == ["--rss"]:
         return run_rss()
+    if sys.argv[1:] == ["--wechat-report"]:
+        from daily_pipeline import run
+        return run(db_path, CONFIG_PATH, wechat_only=True, refresh_incomplete=True)
     if sys.argv[1:] in (["--daily-run"], ["--generate-report"]):
         from daily_pipeline import run
         return run(db_path, CONFIG_PATH, report_only=sys.argv[1] == "--generate-report")

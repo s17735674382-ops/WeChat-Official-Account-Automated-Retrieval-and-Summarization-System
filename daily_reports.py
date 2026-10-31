@@ -60,7 +60,8 @@ def render(status, articles, failures, secrets=(), layout=None):
               f"实际生成时间：{status['generated_at']}", '']
     if status['status'] == 'partial':
         lines += ['**数据不完整：部分采集、分析失败或达到处理时限，以下信息仅反映已完成的部分。允许按 partial 日报读取和发送。**', '']
-    lines += [f"统计范围：{status['window_start']} 至 {status['cutoff_at']}（按本地入库/发现时间；首次为最近24小时，不等于发布完整覆盖）。",
+    scope_note = '仅当天新采集入库，不等于当天发布；历史积压不自动补分析' if status.get('selection')=='today_discovered' else '按本地入库/发现时间；首次为最近24小时，不等于发布完整覆盖'
+    lines += [f"统计范围：{status['window_start']} 至 {status['cutoff_at']}（{scope_note}）。",
               f"信息源：{status['sources_total']}；成功：{status['sources_success']}；失败或未完成：{status['sources_failed']}。",
               f"新增文章：{status['articles_new']}；已分析：{status['articles_analyzed']}；待分析或失败：{status['articles_pending']}。", '']
     if status['sources_total'] and not status['sources_success']:
@@ -170,14 +171,18 @@ def publish(folder, status, markdown, document):
     md = folder / (status['report_date'] + '.md')
     page = folder / (status['report_date'] + '.html')
     manifest = folder / 'status.json'
+    dated = folder / ('status-' + status['report_date'] + '.json')
     status.update(markdown_path=str(md.resolve()), html_path=str(page.resolve()),
                   markdown_sha256=hashlib.sha256(markdown.encode('utf-8')).hexdigest(),
-                  html_sha256=hashlib.sha256(document.encode('utf-8')).hexdigest())
-    old = {p: p.read_bytes() if p.exists() else None for p in (md, page, manifest)}
+                  html_sha256=hashlib.sha256(document.encode('utf-8')).hexdigest(),
+                  dated_status_path=str(dated.resolve()))
+    old = {p: p.read_bytes() if p.exists() else None for p in (md, page, dated, manifest)}
     try:
         atomic(md, markdown.encode('utf-8'))
         atomic(page, document.encode('utf-8'))
-        atomic(manifest, json.dumps(status, ensure_ascii=False, indent=2).encode('utf-8'))
+        data = json.dumps(status, ensure_ascii=False, indent=2).encode('utf-8')
+        atomic(dated, data)
+        atomic(manifest, data)
     except OSError:
         for path, data in old.items():
             try:

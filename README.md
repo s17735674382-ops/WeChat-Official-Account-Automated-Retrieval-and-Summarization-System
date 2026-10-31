@@ -80,7 +80,7 @@ python -B -X utf8 .\main.py --generate-report
 - `partial`：来源失败、暂为空而无法确认覆盖、分析失败/未完成、海报遗漏或超时；仍是可以读取和发送的正式报告。
 - `failed`：数据无法可靠读取或正式报告无法可靠写出。
 
-统计按发现/入库时间，从上一次 complete 报告截止时间延续；首次采用前24小时。第一次采集可能发现 RSS 中较早的文章，不能据此认定都是当天发布。每天只采一次仍可能遗漏已从有限 RSS 历史中移除的文章。
+统计按北京时间当天首次发现/入库时间。自动任务只分析当天新增的公众号推文，不自动补分析往日积压；首次恢复订阅时可能发现较早发布的文章，不能据此认定都是当天发布。每天只采一次仍可能遗漏已从有限 RSS 历史中移除的文章。
 
 读取报告的外部软件应检查当天状态为 complete 或 partial，核对文件内 report_id 与状态文件一致，以及 markdown_sha256；再次读取状态确认 report_id 未变化。文件不匹配时稍后重读。源、报告和 Key 都不需要提供给仓库维护者。
 
@@ -112,10 +112,10 @@ $env:DEEPSEEK_API_KEY = Read-Host '输入自己的 DeepSeek API Key' -MaskInput
 ## 测试与模块
 
 ```powershell
-python -B -X utf8 -m unittest test_v03 test_v04 test_v041 test_wechat2rss test_daily test_editor -q
+python -B -X utf8 -m unittest test_v03 test_v04 test_v041 test_wechat2rss test_daily test_editor test_retention -q
 ```
 
-测试使用临时数据库、人工测试文章/纯色图片和模拟模型响应；测试成功不代表真实 OCR 已准确完成。Windows 硬链接与目录联接点测试需要相应系统权限。项目开发记录包含85项免费测试，公开副本的实际验证结果见 [发布检查](docs/release-check.md)。
+测试使用临时数据库、人工测试文章/纯色图片和模拟模型响应；测试成功不代表真实 OCR 已准确完成。Windows 硬链接与目录联接点测试需要相应系统权限。项目开发记录包含93项免费测试，公开副本的实际验证结果见 [发布检查](docs/release-check.md)。
 
 | 文件 | 作用 |
 |---|---|
@@ -129,3 +129,16 @@ python -B -X utf8 -m unittest test_v03 test_v04 test_v041 test_wechat2rss test_d
 | register_daily_task.ps1 / run_scheduled_daily.ps1 | 可选的Windows计划任务 |
 
 限制：活动和日期需人工核对；二维码不能推测报名地址；云服务不可用会影响覆盖；默认图片数量、格式和时间预算可能导致 partial。项目不包含模型权重、Wechat2RSS 商业镜像、云账号、真实账单或用户数据。
+
+
+## 当天新增与每周清理
+
+我将日任务默认设为仅处理 Wechat2RSS 公众号订阅（`daily.wechat_only=true`），普通 RSS 仍可通过原菜单读取。`only_today_new=true` 按北京时间当天首次发现入库选择文章；不以可能缺失或错误的公众号发布时间筛选。历史待分析内容不会自动补分析，若需要可明确使用 `--retry-analysis ID` 手动重试。已成功分析的文章始终跳过。
+
+状态文件保留兼容入口 `reports/status.json`，并同步生成带日期的 `reports/status-YYYY-MM-DD.json`。二者包含相同的 report_date、带 UTC+8 的 generated_at、report_id 和文件 SHA256；同日覆盖，跨日保留。外部程序必须核对日期、标识和哈希，不能仅凭 status.json 存在就发送。
+
+`weekly_cleanup_enabled=true`、`retention_days=30`：每周日当地日报正式生成后自动执行清理；complete 和 partial 都可触发，failed 不清理。只清理超过最近30个北京时间自然日的自动采集文章及关联记录、日期命名的日报和状态副本，保留订阅、配置、手动导入记录、进行中分析及近期报告引用的文章。只处理 image_store 中安全验证过、无其他引用的副本，用户原图不动。清理前备份数据库，图片和报告移除前也保存恢复副本；数据库失败则不继续删除图片。精简 URL/稳定ID 哈希长期保留，避免旧推文重新入库和重复付费。
+
+备份和清理明细位于 backups/weekly_cleanup_*，本功能产生且完整完成的备份保留30天后自动清理；未完成备份及旧的人工备份不会自动删除，仍可能占用空间。数据库会在删除后压缩。每周只做一次，错过周日可在已有周清理记录的系统下次出报时补做；首次启用等待周日。清理状态记录在 logs/weekly_cleanup.json。此处“汇报完成”指本地报告生成，程序无法确认外部 Harness 是否已发送微信。
+
+计划任务在每天10:00运行，并在登录后检查补跑；当天已有哈希一致的 complete/partial 报告则自动跳过。电脑必须开机且用户已登录，唤醒不等于登录。建议只保留一个对应本项目的计划任务。启动阶段另有 logs/日期-launcher.log，便于区分未启动和程序内失败。计划任务使用 Windows 自带 PowerShell，避免依赖开发工具缓存路径。

@@ -1,4 +1,4 @@
-function Resolve-RadarPython {
+﻿function Resolve-RadarPython {
     param([string]$Requested)
     if ($Requested) {
         if (-not (Test-Path -LiteralPath $Requested -PathType Leaf)) { throw '指定的 Python 文件不存在。' }
